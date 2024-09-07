@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-16">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iekyā Clock</title>
+    <style>
+    /* If you're reading this, it may become clear that I have no idea how to code ;/ Bless ChatGPT */
+        /* Dark mode background and text color */
+        body {
+            font-family: Menlo, monospace;
+            text-align: center;
+            background-color: #121212;
+            color: #E0E0E0;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 48px;
+            color: #BB86FC;
+            margin-bottom: 20px;
+        }
+
+        /* idk how the blur works so it stays that way*/
+        #clock {
+            font-size: 40px;
+            margin: 20px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            color: #E0E0E0;
+            text-shadow: 0 0 10px #BB86FC;
+        }
+
+        select,
+        input {
+            font-size: 20px;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #BB86FC;
+            background-color: #333333;
+            color: #E0E0E0;
+        }
+
+        .input-container {
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #BB86FC;
+            color: white;
+            font-size: 16px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #3700B3;
+        }
+
+        #info-section {
+            margin-top: 30px;
+            text-align: left;
+            max-width: 600px;
+            margin: auto;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        #info-section p {
+            margin-bottom: 0;
+        }
+
+        details {
+            background-color: #333333;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        summary {
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #BB86FC;
+        }
+
+        footer {
+            margin-top: 50px;
+            font-size: 14px;
+            color: #999999;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Iekyā Clock</h1>
+
+    <!-- Dropdown to choose display mode -->
+    <div class="input-container">
+        <label for="dayDisplayMode">Choose Display Mode: </label>
+        <select id="dayDisplayMode" onchange="updateClock()">
+            <option value="dayN">Day nth</option>
+            <option value="nthOfMonth">Nth of Month</option>
+        </select>
+    </div>
+
+    <!-- Dropdown menu to select the timekeeping standard -->
+    <div class="input-container">
+        <label for="timeSystem">Choose Time System: </label>
+        <select id="timeSystem" onchange="updateClock()">
+            <option value="dɢ">dɢ System</option>
+            <option value="þ">þ System</option>
+            <option value="þfrac">Precise þ System</option>
+            <option value="hsɢ">hsɢ System</option>
+            <option value="kfɢ">kfɢ System</option>
+        </select>
+    </div>
+
+    <!-- User input for date/time -->
+    <div class="input-container">
+        <label for="inputDate">Enter Date: </label>
+        <input type="date" id="inputDate" onchange="updateClock()" pattern="\d{4}-\d{2}-\d{2}" required />
+    </div>
+    <div class="input-container">
+        <label for="inputTime">Enter Time (if date is entered but this is empty, defaults to 00:00:00): </label>
+        <input type="time" id="inputTime" step="1" onchange="updateClock()" />
+    </div>
+
+    <div id="clock"></div>
+
+    <div id="info-section">
+        <details>
+            <summary>Note:</summary>
+            <p>If there is nothing inputted inside the date boxes, the clock will display the current time.<br><br>
+                The program is not yet prepared to take dates before 23rd of March 1250, 00:00:00 UTC+0, which is when the
+                Friliatic calendar is defined to begin.
+            </p>
+        </details>
+    </div>
+
+    <footer>
+        Iekyā Clock v.1.0.0 by Eufalesio
+    </footer>
+
+    <script>
+        const A0_OFFSET_SECONDS = 22713954316; // Offset from Unix Epoch in seconds
+
+        // Month names
+        const monthNames = [
+            "Priim",
+            "Sekund",
+            "Terti",
+            "Kwaart",
+            "Medi",
+            "Proti",
+            "Dyti",
+            "Triti",
+            "Tetart"
+        ];
+
+        function getUnixTimeFromInput() {
+            const dateInput = document.getElementById("inputDate").value;
+            const timeInput = document.getElementById("inputTime").value || "00:00:00";
+
+            if (!dateInput) {
+                // If no date is entered, return current time
+                return Math.floor(Date.now());
+            }
+
+            const dateTimeString = dateInput + "T" + timeInput;
+            const userDate = new Date(dateTimeString);
+            return Math.floor(userDate.getTime()); // Convert to Unix timestamp in seconds
+        }
+
+        function updateClock() {
+            const currentUnixTime = getUnixTimeFromInput(); // Get the user-entered Unix time or the current time
+            const a0Time = currentUnixTime / 1000 + A0_OFFSET_SECONDS; // Subtract offset from the current time to get A0 time
+            const jang = 102140353 / 169873450;
+
+            // Convert to Iekyāean time format
+            const iekyaTime = Math.floor(a0Time / jang); // Convert seconds to jang
+            const nofiekyaTime = a0Time / jang;
+            const exactiekyatime = a0Time;
+
+            const Year = 18662400; // Jangs in a year
+            const year = Math.floor(iekyaTime / Year) + 1;
+            const day = (Math.floor(iekyaTime / 129600) % 144) + 1;
+            const monthday = (Math.floor(iekyaTime / 129600) % 32) + 1;
+
+            // dɢ system
+            const doyter = String(Math.floor(iekyaTime / 360) % 360).padStart(3, '0');
+            const jangdoyter = String(Math.floor(iekyaTime) % 360).padStart(3, '0');
+
+            // þ system
+            const þuliþan = String((Math.floor(nofiekyaTime / 129.6)) % 1000).padStart(3, '0');
+            const þuliþanfrac = ((Math.floor(nofiekyaTime / 1.296)) % 100);
+
+            // hsɢ system
+            const ehour = (Math.floor(iekyaTime / 14400) % 9) + 1;
+            const stuon = String(Math.floor(iekyaTime / 120) % 120).padStart(3, '0');
+            const jangstuon = String(Math.floor(iekyaTime) % 120).padStart(3, '0');
+
+            // fkɢ system
+            const figa = String(Math.floor(iekyaTime / 2160) % 60).padStart(2, '0');
+            const kukri = String(Math.floor(iekyaTime / 36) % 36).padStart(2, '0');
+            const jangfiga = String(Math.floor(iekyaTime) % 60).padStart(2, '0');
+
+            // months
+            const monthIndex = Math.floor(iekyaTime / Year * 9) % 9;
+            const monthName = monthNames[monthIndex];
+
+            // Get the selected display mode and time system from the dropdowns
+            const selectedDisplayMode = document.getElementById("dayDisplayMode").value;
+            const selectedTimeSystem = document.getElementById("timeSystem").value;
+
+            let timeDisplay = `East Masīrika Time:\n\nYear ${year}\n`;
+
+            `${iekyaTime}`;
+            // Display based on selected mode
+            if (selectedDisplayMode === "dayN") {
+                timeDisplay += `Day ${day}\n\n`;
+            } else if (selectedDisplayMode === "nthOfMonth") {
+                timeDisplay += `${monthday}th of ${monthName}\n\n`;
+            }
+
+            // Display the selected time system
+            if (selectedTimeSystem === "dɢ") {
+                timeDisplay += `dɢ ${doyter}:${jangdoyter}`;
+            } else if (selectedTimeSystem === "þ") {
+                timeDisplay += `þ ${þuliþan}`;
+            } else if (selectedTimeSystem === "þfrac") {
+                timeDisplay += `þ ${þuliþan}.${þuliþanfrac}`;
+            } else if (selectedTimeSystem === "hsɢ") {
+                timeDisplay += `hsɢ ${ehour}:${stuon}:${jangstuon}`;
+            } else if (selectedTimeSystem === "kfɢ") {
+                timeDisplay += `hsɢ ${kukri}:${figa}:${jangfiga}`;
+            }
+
+            // Update the clock display
+            document.getElementById("clock").innerText = timeDisplay;
+        }
+
+        // Update the clock fast enough not to make leap jangs or whatever, I wanted to include the exact value in seconds for a jang of 102140353 / 169873450 but for some reason the html seems to round it and it messes up my calculations. I don't know how to force html to not round or add higher precision and I'm too lazy to do another pass on the code or tell ChatGPT to fix it or do anything to it on the slight but probable chance that it would not work and it ends with time being slipped out of my hands......... so I am leaving it as is. If you're reading this... hello! Thanks for inspecting my code I guess! I could use a few tips for someone who actually knows web design and HTML.
+        setInterval(updateClock, 100);
+    </script>
+</body>
+
+</html>
